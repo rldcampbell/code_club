@@ -1,0 +1,14 @@
+{
+  "name": "code_club",
+  "version": "1.0.0",
+  "description": "code club tasks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Robert Campbell",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.15"
+  }
+}
