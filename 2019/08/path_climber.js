@@ -14,7 +14,7 @@ const init = n => ({
   climbers: [
     {
       climb: 0,
-      path: [{ point: [0, 0], climb: 0 }],
+      path: [[0, 0]],
       finished: false
     }
   ],
@@ -22,9 +22,9 @@ const init = n => ({
 })
 
 const printClimber = (climber, i) => `climber: ${i}
-path: ${climber.path.map(p => p.point).join("|")}
+path: ${climber.path.join("|")}
 steps: ${climber.path.length}
-climb: ${climber.path[climber.path.length - 1].climb}
+climb: ${climber.climb}
 finished: ${climber.finished}
 `
 
@@ -35,14 +35,13 @@ const setVal = map => (coords, val) => (map[coords[0]][coords[1]] = val)
 
 const split = (map, target) => {
   const n = map.length
+  const height = getVal(map)
   return climber => {
-    const last = tail(climber.path)
-    const lp = last.point
+    const lp = tail(climber.path)
     if (equal(target, lp)) {
       climber.finished = true
       return [climber]
     }
-    const height = getVal(map)
     return [
       [lp[0] - 1, lp[1]],
       [lp[0], lp[1] - 1],
@@ -53,10 +52,8 @@ const split = (map, target) => {
       .filter(filterBacktrack(climber)) // remove backtrack
       .filter(filterAdjacent(climber)) // remove running adjacent to self
       .map(c => ({
-        path: climber.path.concat({
-          point: c,
-          climb: last.climb + Math.abs(height(c) - height(lp))
-        }),
+        path: climber.path.concat([c]),
+        climb: climber.climb + Math.abs(height(c) - height(lp)),
         finished: false
       }))
   }
@@ -72,7 +69,7 @@ const equal = (a, b) => a[0] === b[0] && a[1] === b[1]
 const filterBacktrack = climber => coords => {
   const { path } = climber
   const len = path.length
-  return !(len > 1 && equal(path[len - 2].point, coords))
+  return !(len > 1 && equal(path[len - 2], coords))
 }
 
 const diffEquals = n => (a, b) => Math.abs(a - b) === n
@@ -85,7 +82,7 @@ const adjacent = (a, b) =>
 
 // can't return to be adjacent to own path
 const filterAdjacent = climber => coords =>
-  !climber.path.slice(0, -1).some(({ point }) => adjacent(point, coords))
+  !climber.path.slice(0, -1).some(point => adjacent(point, coords))
 
 const stepper = (map, target) => {
   const s = split(map, target)
@@ -97,16 +94,13 @@ const stepper = (map, target) => {
       (p, c) => {
         const cs = s(c) // split climber
         cs.forEach(c => {
-          const last = tail(c.path)
+          const lp = tail(c.path)
           if (c.finished) {
             p.climbers.push(c) // finished climber
-          } else if (
-            bestAt(last.point) === undefined ||
-            last.climb < bestAt(last.point)
-          ) {
-            updateBest(last.point, last.climb)
+          } else if (bestAt(lp) === undefined || c.climb < bestAt(lp)) {
+            updateBest(lp, c.climb)
             p.climbers.push(c) // only continue if best
-            p.tails.push(last.point)
+            p.tails.push(lp)
           }
         })
         return p
@@ -124,30 +118,29 @@ const stepper = (map, target) => {
   }
 }
 
-const underVal = val => climber =>
-  val === undefined || tail(climber.path).climb <= val
+const underVal = val => climber => val === undefined || climber.climb <= val
 
 const bothWith = (a, b, comparator) =>
   a.some(aVal => b.some(bVal => comparator(aVal, bVal)))
 
 const notCrossed = heads => climber =>
-  !bothWith(heads, climber.path.map(p => p.point).slice(0, -1), equal)
+  !bothWith(heads, climber.path.slice(0, -1), equal)
 
 const bestCurrent = climbers => {
   let bests = climbers.reduce((p, c) => {
-    const last = tail(c.path)
-    const key = JSON.stringify(last.point)
+    const lp = tail(c.path)
+    const key = JSON.stringify(lp)
     p[key] = Math.min(
-      last.climb,
+      c.climb,
       p[key] === undefined ? Number.MAX_SAFE_INTEGER : p[key]
     )
     return p
   }, {})
 
   return climber => {
-    const last = tail(climber.path)
-    const key = JSON.stringify(last.point)
-    if (bests[key] !== undefined && bests[key] === last.climb) {
+    const lp = tail(climber.path)
+    const key = JSON.stringify(lp)
+    if (bests[key] !== undefined && bests[key] === climber.climb) {
       delete bests[key]
       return true
     }
@@ -184,9 +177,9 @@ const exec = (map, verbose) => {
     state = step(state)
   }
   if (verbose) {
-    console.log(printMapWithPath(map, state.climbers[0].path.map(p => p.point)))
+    console.log(printMapWithPath(map, state.climbers[0].path))
   }
-  return tail(state.climbers[0].path).climb
+  return state.climbers[0].climb
 }
 
 ////////////////////////
