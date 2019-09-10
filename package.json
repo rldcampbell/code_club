@@ -9,6 +9,7 @@
   "author": "Robert Campbell",
   "license": "ISC",
   "dependencies": {
+    "bignumber.js": "^9.0.0",
     "lodash": "^4.17.15"
   },
   "repository": {
